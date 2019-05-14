@@ -14,18 +14,21 @@ def patternMatching(target, SB, step_size=None):
     if step_size == None:
         step_size = t
 
-    # extend to S * F * T
-    targets = np.array([target]*S)
-
     symbolic = []
 
     for timestep in range(0, T, step_size):
         # segment target to S * F * t
-        target_seg = targets[:, timestep:timestep+t]
-        # distance
-        dist = distanceFunction(target_seg, SB)
+        target_seg = target[timestep:timestep+t]
+
+        min_dist = np.inf
+        idx = 0
+        for i in range(len(SB)):
+            # distance
+            dist = distanceFunction(target_seg, SB[i])
+            if min_dist > dist:
+                idx = np.argmin(dist)
+                min_dist = dist
         # pick the best one
-        idx = np.argmin(dist)
         symbolic.append(idx)
 
     return symbolic
@@ -37,7 +40,7 @@ def distanceFunction(a, b):
     '''
     # MSE
     # return np.mean(np.mean(np.power(a-b, 2), axis=2), axis=1)
-    return np.mean(np.power(a-b, 2), axis=1)
+    return np.mean(np.power(a-b, 2))
 
 
 
@@ -57,7 +60,8 @@ if __name__ == '__main__':
     
 
     # pattern matching
-    patternMatching(target, SB)
+    sym = patternMatching(target, SB)
+    print(np.shape(sym))
 
     # synthesize
 
