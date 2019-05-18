@@ -1,6 +1,7 @@
 import numpy as np
 import utils
 from scipy.io import wavfile as wav
+from scipy.stats import pearsonr
 
 def patternMatching(target, SB, step_size=None):
     '''
@@ -43,18 +44,19 @@ def distanceFunction(a, b):
     a, b: 3-D matrix, S * F * T
     '''
     # MSE
-    # return np.mean(np.mean(np.power(a-b, 2), axis=2), axis=1)
-    return np.mean(np.power(a-b, 2))
+    #return np.mean(np.power(a-b, 2))
+    cor, _ = pearsonr(a, b)
+    return cor
 
 def synthesize(symbolic, SB):
     output = np.array([])
 
     for idx in symbolic:
-        output = np.append(output, SB[idx])
+        output = np.append(output, SB[int(idx)])
 
     return output
 
-def dumpWav(audio, params, filename='output.wav'):
+def dumpWav(audio, params, filename='output/output.wav'):
     with wave.open(filename, 'w') as wave_file:
         wave_file.setparans(params)
         
@@ -66,29 +68,40 @@ def featureExtraction(input_audio):
 
 if __name__ == '__main__':
     # load data
-    #target_sr, target = utils.read_wav('dataset/input_data/BPS_piano/23.wav')
-    target_sr, target = utils.read_wav('dataset/input_data/senponsakura/senponsakura1.wav')
-    SB_sr, sound_source = utils.read_wav('dataset/input_data/BPS_piano/3.wav')
+    
+    target = np.load('dataset/target_music/FULL/Black Diamond.npy')
+    SB = np.load('dataset/sound_bank/BPS-FH/1.npy')
+    SB_sr = 44100
+    #target_sr, target = utils.read_wav('dataset/wav/FULL/aliez.wav')
+    #SB_sr, sound_source = utils.read_wav('dataset/input_data/BPS_piano/3.wav')
+    #target_sr, target = utils.read_wav('dataset/input_data/senponsakura/senponsakura1.wav')
+    SB_sr, sound_source = utils.read_wav('dataset/wav/BPS-FH/3.wav')
     #SB_sr, sound_source = utils.read_wav('dataset/input_data/only my railgun/only my railgun7.wav')
 
-    SB = utils.genSoundBank(sound_source[:44100*30], SB_sr, 100)
+    SB = utils.genSoundBank(sound_source, SB_sr, 100)
 
-    print(np.shape(SB))
-    if target_sr != SB_sr:
-        print("[Warning]: sample rate doesn't match")
+    #print(np.shape(SB))
+    #if target_sr != SB_sr:
+    #    print("[Warning]: sample rate doesn't match")
+    #print(np.shape(target))
+    #print(np.shape(SB))
 
     # extract feature
     
 
     # pattern matching
-    sym = patternMatching(target[:44100*30], SB)
-    print(np.shape(sym))
-    print(sym)
+    symbolic = np.array([])
+    for target_clip in target:
+        sym = patternMatching(target_clip, SB)
+        print(sym)
+        symbolic = np.concatenate((symbolic, sym))
+    print(np.shape(symbolic))
+    print(symbolic)
 
     # synthesize
-    output = synthesize(sym, SB)
+    output = synthesize(symbolic, SB)
     print(np.shape(output))
 
     # dump as wav
-    wav.write("output.wav", SB_sr, output)
+    wav.write("output/output.wav", SB_sr, output)
 
