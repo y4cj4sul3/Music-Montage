@@ -1,1 +1,4 @@
 .DS_Stroe
+*.pyc
+output/*
+dataset/*
