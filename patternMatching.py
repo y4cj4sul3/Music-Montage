@@ -2,6 +2,7 @@ import numpy as np
 import utils
 from scipy.io import wavfile as wav
 from scipy.stats import pearsonr
+import features
 
 def patternMatching(target, SB, step_size=None):
     '''
@@ -59,37 +60,69 @@ def synthesize(symbolic, SB):
 def dumpWav(audio, params, filename='output/output.wav'):
     with wave.open(filename, 'w') as wave_file:
         wave_file.setparans(params)
-        
-
-    
 
 def featureExtraction(input_audio):
     pass
 
 if __name__ == '__main__':
-    # load data
+
+    from argparse import ArgumentParser
     
-    target = np.load('dataset/target_music/FULL/Black Diamond.npy')
-    SB = np.load('dataset/sound_bank/BPS-FH/1.npy')
-    SB_sr = 44100
-    #target_sr, target = utils.read_wav('dataset/wav/FULL/aliez.wav')
-    #SB_sr, sound_source = utils.read_wav('dataset/input_data/BPS_piano/3.wav')
-    #target_sr, target = utils.read_wav('dataset/input_data/senponsakura/senponsakura1.wav')
-    SB_sr, sound_source = utils.read_wav('dataset/wav/BPS-FH/3.wav')
-    #SB_sr, sound_source = utils.read_wav('dataset/input_data/only my railgun/only my railgun7.wav')
-
-    SB = utils.genSoundBank(sound_source, SB_sr, 100)
-
-    #print(np.shape(SB))
-    #if target_sr != SB_sr:
-    #    print("[Warning]: sample rate doesn't match")
-    #print(np.shape(target))
-    #print(np.shape(SB))
-
-    # extract feature
+    # argument parser
+    parser = ArgumentParser()
+    parser.add_argument('-t', '--target', dest='target', default='', help='target music')
+    parser.add_argument('-s', '--sound-bank', dest='sound_bank', default='', help='sound bank')
+    parser.add_argument('-o', '--output', dest='output', default='', help='output path')
+    args = parser.parse_args()
     
+    # parameters
+    target_filepath = args.target
+    SB_filepath = args.sound_bank
+    output_path = args.output
+    
+    assert target_filepath != '', 'You must give a target (use -t or --target)'
+    assert SB_filepath != '', 'You must give a sound bank (use -s or --sound-bank)'
+        
+    '''
+    load data
+    '''
+    # load target file
+    target_filetype = target_filepath.split('.')[-1]
+    if target_filetype == 'npy':
+        target = np.load(target_filepath)
+        target_sr = 44100
+    elif target_filetype == 'wav':
+        target_sr, target = utils.read_wav(target_filepath)
+        target = [target]
+    else:
+        assert True, 'Unknown target file type'
+    
+    # load sound bank
+    SB_filetype = SB_filepath.split('.')[-1]
+    if SB_filetype == 'npy':
+        SB = np.load(SB_filepath)
+        SB_sr = 44100
+    elif SB_filetype == 'wav':
+        SB_sr, sound_source = utils.read_wav(SB_filepath)
+        # ms per beat
+        mspb = int(60000//features.getTempo(SB_filepath))
+        print('mspb:', mspb)
+        SB = utils.genSoundBank(sound_source, SB_sr, mspb)
+    else:
+        assert True, 'Unknown sound bank file type'
+    
+    
+    if target_sr != SB_sr:
+        print("[Warning]: sample rate doesn't match")
 
-    # pattern matching
+    '''
+    Extract Feature
+    '''
+    
+    '''
+    Pattern Matching
+    '''
+    print(np.shape(target))
     symbolic = np.array([])
     for target_clip in target:
         sym = patternMatching(target_clip, SB)
@@ -98,10 +131,17 @@ if __name__ == '__main__':
     print(np.shape(symbolic))
     print(symbolic)
 
-    # synthesize
+    '''
+    Synthesize
+    '''
     output = synthesize(symbolic, SB)
     print(np.shape(output))
 
     # dump as wav
-    wav.write("output/output.wav", SB_sr, output)
+    if output_path == '':
+        target_name = target_filepath.split('/')[-1].split('.')[0]
+        SB_name = SB_filepath.split('/')[-1].split('.')[0]
+        output_path = 'output/' + target_name + '_' + SB_name + '.wav'
+    wav.write(output_path, SB_sr, output)
+    print('Save file: ' + output_path)
 

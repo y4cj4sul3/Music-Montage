@@ -6,8 +6,6 @@ from glob import glob
 def target_music(filepath, outputpath):
     # read wav
     y, sr = read_wav(filepath)
-    if sr == 44100:
-        return y
     
     clips = cut_into_clips(y, sr, ms=30000, padding=True)
 
@@ -19,8 +17,6 @@ def target_music(filepath, outputpath):
 def sound_bank(filepath, outputpath, ms=1000):
     # read wav
     y, sr = read_wav(filepath)
-    if sr == 44100:
-        return y
     
     clips = cut_into_clips(y, sr, ms=ms)
 
@@ -65,12 +61,17 @@ def cut_into_clips(y, sr, ms=1000, padding=False):
     return clips
         
 if __name__ == '__main__':
+    
     # get file path list
-    files = glob('dataset/wav/GTZAN/*/*.wav')
+    files = glob('dataset/wav/violin/*.wav')
     
     for filepath in files:
         outputpath = filepath.split('/', 2)[2].split('.')[0]+'.npy'
         target_music(filepath, 'dataset/target_music/' + outputpath)
         sound_bank(filepath, 'dataset/sound_bank/' + outputpath)
+    
+        
+    target_music('dataset/wav/little_star.wav', 'dataset/target_music/little_star.npy')
+    sound_bank('dataset/wav/little_star.wav', 'dataset/sound_bank/little_star.npy')
     
     
